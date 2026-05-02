@@ -17,26 +17,50 @@ datasource db {
 model User {
   id           String   @id @default(cuid())
   email        String   @unique
-  passwordHash String? // null si solo login con Spotify
+  passwordHash String? // null si solo login con Spotify (vía Account)
   username     String   @unique // handle público, ej. @anita
   displayName  String
   avatarUrl    String?
   bio          String?  @db.VarChar(160)
 
-  // Spotify (opcional)
-  spotifyId           String? @unique
-  spotifyRefreshToken String? // cifrado at-rest (manejar fuera de Prisma)
+  emailVerified DateTime? // null si nunca confirmó email (Auth.js)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 
-  entries        Entry[]
-  followers      Follow[]        @relation("followee")
-  following      Follow[]        @relation("follower")
-  reactions      EntryReaction[]
-  spotifyCache   SpotifyCache?
+  // Auth.js (vinculación OAuth — p.ej. Spotify)
+  accounts Account[]
+
+  entries      Entry[]
+  followers    Follow[]        @relation("followee")
+  following    Follow[]        @relation("follower")
+  reactions    EntryReaction[]
+  spotifyCache SpotifyCache?
 
   @@index([username])
+}
+
+// Cuentas OAuth vinculadas a un User (Spotify ahora; Apple/Google a futuro).
+// Estructura definida por @auth/prisma-adapter v2 — no inventar campos.
+model Account {
+  id                String  @id @default(cuid())
+  userId            String
+  type              String // "oauth", "oidc", etc.
+  provider          String // "spotify"
+  providerAccountId String
+
+  refresh_token     String? @db.Text
+  access_token      String? @db.Text
+  expires_at        Int?
+  token_type        String?
+  scope             String?
+  id_token          String? @db.Text
+  session_state     String?
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([provider, providerAccountId])
+  @@index([userId])
 }
 
 // ============================================================================
