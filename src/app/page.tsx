@@ -1,14 +1,16 @@
 import Link from "next/link";
-import { auth, signOut } from "@/auth";
+import { auth, signOut, SPOTIFY_OAUTH_ENABLED } from "@/auth";
 import { prisma } from "@/lib/db";
 import { connectSpotifyAction } from "@/lib/actions/spotify";
 
 export default async function Home() {
   const session = await auth();
 
-  // Si hay sesión, miramos si ya tiene Spotify vinculado.
+  // Si hay sesión + Spotify OAuth habilitado en el entorno, miramos si ya
+  // tiene Spotify vinculado. Si el OAuth está deshabilitado (env vars
+  // ausentes en prod), saltamos la query y no mostramos el botón.
   let hasSpotify = false;
-  if (session?.user?.id) {
+  if (session?.user?.id && SPOTIFY_OAUTH_ENABLED) {
     const acct = await prisma.account.findFirst({
       where: { userId: session.user.id, provider: "spotify" },
       select: { id: true },
@@ -45,20 +47,21 @@ export default async function Home() {
               Ir a mi diario
             </Link>
 
-            {hasSpotify ? (
-              <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs text-emerald-700">
-                Spotify conectado
-              </p>
-            ) : (
-              <form action={connectSpotifyAction}>
-                <button
-                  type="submit"
-                  className="w-full rounded border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 hover:bg-stone-100"
-                >
-                  Conectar Spotify
-                </button>
-              </form>
-            )}
+            {SPOTIFY_OAUTH_ENABLED &&
+              (hasSpotify ? (
+                <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs text-emerald-700">
+                  Spotify conectado
+                </p>
+              ) : (
+                <form action={connectSpotifyAction}>
+                  <button
+                    type="submit"
+                    className="w-full rounded border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 hover:bg-stone-100"
+                  >
+                    Conectar Spotify
+                  </button>
+                </form>
+              ))}
 
             <form
               action={async () => {
