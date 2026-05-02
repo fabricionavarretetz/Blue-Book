@@ -1,0 +1,141 @@
+// Blue Book — schema MVP
+// Núcleo: User, Entry (música + emoción + contexto), Follow.
+// Extensiones tempranas: Tag taxonomy, EntryReaction (Phase 2-ready), SpotifyCache.
+
+generator client {
+  provider = "prisma-client"
+  output   = "../src/generated/prisma"
+}
+
+datasource db {
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  directUrl = env("DIRECT_URL")
+}
+
+// ============================================================================
+//  USER
+// ============================================================================
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String? // null si solo login con Spotify
+  username     String   @unique // handle público, ej. @anita
+  displayName  String
+  avatarUrl    String?
+  bio          String?  @db.VarChar(160)
+
+  // Spotify (opcional)
+  spotifyId           String? @unique
+  spotifyRefreshToken String? // cifrado at-rest (manejar fuera de Prisma)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  entries        Entry[]
+  followers      Follow[]        @relation("followee")
+  following      Follow[]        @relation("follower")
+  reactions      EntryReaction[]
+  spotifyCache   SpotifyCache?
+
+  @@index([username])
+}
+
+// ============================================================================
+//  ENTRY — núcleo del producto: un momento + canción + emoción
+// ============================================================================
+model Entry {
+  id     String @id @default(cuid())
+  userId String
+  user   User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  // Snapshot del track al momento de loggear (NO FK a tabla Songs)
+  // Razón: Spotify cambia metadata; queremos preservar lo que el usuario vio.
+  spotifyId     String // track id
+  trackSnapshot Json // { name, artists[], album, image, durationMs, isrc }
+
+  // Level 1 — siempre presente
+  reaction String // emoji unicode (🔥 💔 😭 ✨ 🌙 🌅 ...)
+
+  // Level 2 — opcional (free-form, sugeridos por taxonomy)
+  moodTags    String[] @default([])
+  contextTags String[] @default([])
+
+  // Level 3 — opcional, capado a 500 chars para forzar brevedad
+  reflection String? @db.VarChar(500)
+
+  visibility Visibility @default(PUBLIC)
+  listenedAt DateTime? // cuando lo escuchó (si != createdAt)
+  createdAt  DateTime  @default(now())
+
+  reactions EntryReaction[]
+
+  @@index([userId, createdAt(sort: Desc)])
+  @@index([spotifyId])
+  @@index([createdAt(sort: Desc)])
+}
+
+enum Visibility {
+  PUBLIC
+  FOLLOWERS
+  PRIVATE
+}
+
+// ============================================================================
+//  FOLLOW — grafo social
+// ============================================================================
+model Follow {
+  followerId String
+  followeeId String
+  follower   User   @relation("follower", fields: [followerId], references: [id], onDelete: Cascade)
+  followee   User   @relation("followee", fields: [followeeId], references: [id], onDelete: Cascade)
+  createdAt  DateTime @default(now())
+
+  @@id([followerId, followeeId])
+  @@index([followeeId])
+}
+
+// ============================================================================
+//  TAG TAXONOMY — solo para autosuggest, NO es FK obligatoria
+// ============================================================================
+model Tag {
+  slug       String  @id // "nostalgico", "noche-manejando"
+  label      String // "nostálgico", "noche manejando"
+  type       TagType
+  usageCount Int     @default(0)
+
+  @@index([type, usageCount(sort: Desc)])
+}
+
+enum TagType {
+  MOOD
+  CONTEXT
+}
+
+// ============================================================================
+//  ENTRY REACTION — Phase 2-ready (likes/reactions a entries de otros)
+// ============================================================================
+model EntryReaction {
+  id        String   @id @default(cuid())
+  entryId   String
+  entry     Entry    @relation(fields: [entryId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  emoji     String
+  createdAt DateTime @default(now())
+
+  @@unique([entryId, userId])
+  @@index([entryId])
+}
+
+// ============================================================================
+//  SPOTIFY CACHE — top tracks/artists/recently played para sugerencias
+// ============================================================================
+model SpotifyCache {
+  userId         String   @id
+  user           User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  topTracks      Json
+  topArtists     Json
+  recentlyPlayed Json
+  refreshedAt    DateTime
+}
