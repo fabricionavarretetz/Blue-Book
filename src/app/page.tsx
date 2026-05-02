@@ -2,6 +2,8 @@ import Link from "next/link";
 import { auth, signOut, SPOTIFY_OAUTH_ENABLED } from "@/auth";
 import { prisma } from "@/lib/db";
 import { connectSpotifyAction } from "@/lib/actions/spotify";
+import { Button } from "@/components/ui/button";
+import { Card } from "@/components/ui/card";
 
 export default async function Home() {
   const session = await auth();
@@ -26,7 +28,7 @@ export default async function Home() {
       </header>
 
       {session?.user ? (
-        <div className="flex w-full max-w-sm flex-col gap-4 rounded-lg border border-stone-200 bg-white p-6 shadow-sm">
+        <Card className="flex w-full max-w-sm flex-col gap-4">
           <div className="text-center">
             <p className="text-stone-700">
               Hola,{" "}
@@ -42,7 +44,7 @@ export default async function Home() {
           <div className="flex flex-col gap-2">
             <Link
               href="/diary"
-              className="rounded bg-stone-900 px-4 py-2 text-center text-sm text-white hover:bg-stone-800"
+              className="rounded bg-stone-900 px-4 py-2 text-center text-sm text-white transition-colors hover:bg-stone-800"
             >
               Ir a mi diario
             </Link>
@@ -54,12 +56,9 @@ export default async function Home() {
                 </p>
               ) : (
                 <form action={connectSpotifyAction}>
-                  <button
-                    type="submit"
-                    className="w-full rounded border border-stone-300 bg-white px-4 py-2 text-sm text-stone-900 hover:bg-stone-100"
-                  >
+                  <Button type="submit" variant="secondary" block>
                     Conectar Spotify
-                  </button>
+                  </Button>
                 </form>
               ))}
 
@@ -69,26 +68,23 @@ export default async function Home() {
                 await signOut({ redirectTo: "/" });
               }}
             >
-              <button
-                type="submit"
-                className="w-full rounded px-4 py-2 text-sm text-stone-500 hover:text-stone-900"
-              >
+              <Button type="submit" variant="ghost" block>
                 Cerrar sesión
-              </button>
+              </Button>
             </form>
           </div>
-        </div>
+        </Card>
       ) : (
         <div className="flex flex-col gap-3">
           <Link
             href="/login"
-            className="rounded bg-stone-900 px-6 py-2 text-center text-sm text-white hover:bg-stone-800"
+            className="rounded bg-stone-900 px-6 py-2 text-center text-sm text-white transition-colors hover:bg-stone-800"
           >
             Iniciar sesión
           </Link>
           <Link
             href="/register"
-            className="rounded border border-stone-300 bg-white px-6 py-2 text-center text-sm text-stone-900 hover:bg-stone-100"
+            className="rounded border border-stone-300 bg-white px-6 py-2 text-center text-sm text-stone-900 transition-colors hover:bg-stone-100"
           >
             Crear cuenta
           </Link>
