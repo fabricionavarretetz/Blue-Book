@@ -69,9 +69,16 @@ export const { handlers, signIn, signOut, auth } = NextAuth({
     Spotify({
       clientId: process.env.SPOTIFY_CLIENT_ID,
       clientSecret: process.env.SPOTIFY_CLIENT_SECRET,
-      authorization: {
-        params: { scope: SPOTIFY_SCOPES },
-      },
+      authorization: `https://accounts.spotify.com/authorize?scope=${encodeURIComponent(SPOTIFY_SCOPES)}`,
+      // Fuerza la redirect_uri exacta independientemente del host del request.
+      // Sin esto, Auth.js auto-detecta el host (puede caer en localhost o
+      // 127.0.0.1 según cómo Node.js bindea) y Spotify rechaza por
+      // "Invalid redirect URI" si no coincide con la registrada.
+      //
+      // IMPORTANTE: redirectProxyUrl debe terminar en `/api/auth`. Auth.js
+      // le agrega automáticamente `/callback/<provider>` para construir la
+      // redirect_uri final. Si pones la ruta completa, queda duplicada.
+      redirectProxyUrl: `${process.env.AUTH_URL}/api/auth`,
       // Vincula cuentas OAuth a un User existente cuando el email coincide.
       // Es seguro porque Spotify nos da un email verificado (controlamos el
       // flujo de redirect, sabemos que el token vino de Spotify).

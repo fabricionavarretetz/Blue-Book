@@ -25,7 +25,16 @@ const registerSchema = z.object({
 const loginSchema = z.object({
   email: z.string().email("Email inválido").toLowerCase(),
   password: z.string().min(1, "Requerido"),
+  // Ruta a la que volver tras login (viene del query param ?from=).
+  from: z.string().optional(),
 });
+
+/** Solo permitir paths internos como destino post-login (evita open redirect). */
+function safeRedirectTo(from: string | undefined): string {
+  if (!from) return "/";
+  if (!from.startsWith("/") || from.startsWith("//")) return "/";
+  return from;
+}
 
 export type AuthFormState = {
   ok: boolean;
@@ -107,6 +116,7 @@ export async function loginAction(
   const raw = {
     email: formData.get("email"),
     password: formData.get("password"),
+    from: formData.get("from")?.toString(),
   };
 
   const parsed = loginSchema.safeParse(raw);
@@ -121,7 +131,7 @@ export async function loginAction(
     await signIn("credentials", {
       email: parsed.data.email,
       password: parsed.data.password,
-      redirectTo: "/",
+      redirectTo: safeRedirectTo(parsed.data.from),
     });
   } catch (err) {
     if (err instanceof AuthError) {

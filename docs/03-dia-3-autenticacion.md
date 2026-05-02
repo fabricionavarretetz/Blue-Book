@@ -244,6 +244,20 @@ export async function registerAction(prev, formData) {
 
 **Detalle no obvio:** `signIn()` lanza un `NEXT_REDIRECT` interno cuando va bien — Next.js lo captura. El `try/catch` debe distinguir `AuthError` (fallo real) del redirect.
 
+### Nota crítica sobre desarrollo local + Spotify
+
+Spotify (desde 2024) **rechaza `http://localhost:...` como Redirect URI** por reglas de OAuth 2.1. Solo acepta:
+- `https://...` (cualquiera)
+- `http://127.0.0.1:...` (loopback IPv4)
+- `http://[::1]:...` (loopback IPv6)
+
+**Implicación:** durante desarrollo local hay que acceder a la app vía `http://127.0.0.1:3000`, NO `http://localhost:3000`. Las cookies son por dominio, así que cambiar el host obliga a re-loguearse.
+
+En el dashboard de Spotify Developer App, registrar:
+```
+http://127.0.0.1:3000/api/auth/callback/spotify
+```
+
 ### 7. UI mínima
 
 `src/app/(auth)/layout.tsx` — wrapper centered con marca Blue Book.

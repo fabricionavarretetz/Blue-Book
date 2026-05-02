@@ -3,7 +3,7 @@
 import { useActionState } from "react";
 import { loginAction, type AuthFormState } from "@/lib/actions/auth";
 
-export function LoginForm() {
+export function LoginForm({ from }: { from?: string }) {
   const [state, formAction, pending] = useActionState<AuthFormState | undefined, FormData>(
     loginAction,
     undefined,
@@ -11,6 +11,7 @@ export function LoginForm() {
 
   return (
     <form action={formAction} className="flex flex-col gap-3">
+      {from && <input type="hidden" name="from" value={from} />}
       <label className="flex flex-col gap-1 text-sm">
         <span className="text-stone-700">Email</span>
         <input

@@ -8,17 +8,41 @@ import type { NextAuthConfig } from "next-auth";
  * El config completo (con Prisma adapter + providers con bcrypt) vive en
  * src/auth.ts y extiende este.
  */
+
+/** Rutas que requieren sesión activa. Match por prefijo. */
+const PROTECTED_PATHS = ["/diary", "/profile", "/settings"];
+
+/** Rutas de auth (login/register) — si hay sesión, redirigir a home. */
+const AUTH_PATHS = ["/login", "/register"];
+
 export default {
   pages: {
     signIn: "/login",
   },
   callbacks: {
     /**
-     * Llamado por el middleware cuando alguien intenta acceder a una ruta.
-     * Se usará en Día 4 cuando añadamos protección de rutas.
-     * Por ahora deja todo público; el guard real lo haremos a nivel de página.
+     * Llamado por el middleware en cada request. Decide si la request continúa,
+     * se redirige a login, o se redirige a home (si ya logueado en /login).
      */
-    authorized() {
+    authorized({ auth, request: { nextUrl } }) {
+      const isLoggedIn = !!auth?.user;
+      const { pathname } = nextUrl;
+
+      const isProtected = PROTECTED_PATHS.some((p) => pathname.startsWith(p));
+      const isAuthRoute = AUTH_PATHS.some((p) => pathname.startsWith(p));
+
+      if (isProtected && !isLoggedIn) {
+        // Redirect a /login con ?from=<ruta original> para volver tras autenticar.
+        const loginUrl = new URL("/login", nextUrl);
+        loginUrl.searchParams.set("from", pathname + nextUrl.search);
+        return Response.redirect(loginUrl);
+      }
+
+      if (isAuthRoute && isLoggedIn) {
+        // Ya estás logueado, no tiene sentido entrar a /login o /register.
+        return Response.redirect(new URL("/", nextUrl));
+      }
+
       return true;
     },
     /**
