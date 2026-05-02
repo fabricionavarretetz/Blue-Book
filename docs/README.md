@@ -22,6 +22,7 @@ conversación original.
 | 03 | [Día 3 — Autenticación](./03-dia-3-autenticacion.md) | 2026-05-02 | Auth.js v5 con Credentials (email+password+bcrypt) y Spotify OAuth opcional. UI mínima de login/register. Endpoint /api/me. |
 | 04 | [Día 4 — Protección de rutas + Spotify OAuth funcional](./04-dia-4-protecciones-y-spotify-oauth.md) | 2026-05-02 | Middleware con redirect a /login + helpers requireAuth/requireAuthApi. Página /diary y endpoint /api/diary. ?from= post-login. Spotify OAuth end-to-end con redirectProxyUrl. |
 | 05 | [Día 5 — Proxy a Spotify](./05-dia-5-spotify-proxy.md) | 2026-05-02 | Cliente Spotify con Client Credentials + user token con refresh automático. TtlCache in-memory. Endpoints /api/search, /api/tracks/:id, /api/me/spotify/top-tracks. |
+| 06 | [Día 6 — Deploy en Vercel](./06-dia-6-deploy-vercel.md) | 2026-05-02 | Deploy ligero en Vercel (sin Spotify OAuth en prod). middleware.ts → proxy.ts. prisma generate en build. Provider OAuth condicional. URL pública: blue-book-eight.vercel.app. |
 
 ## Plan general del proyecto
 
