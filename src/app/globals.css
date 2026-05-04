@@ -1,26 +1,94 @@
 @import "tailwindcss";
 
+/**
+ * Blue Book — design tokens.
+ * Inspirado en cuadernos personales: papel cremoso + tinta de noche +
+ * cursiva para reseñas. Tokens expuestos como CSS vars + Tailwind theme.
+ */
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  /* Paleta papel — fondo cálido, no white puro. Más amarillento que rosáceo. */
+  --color-paper: #efe9d8;
+  --color-paper-card: #f7f1de;
+  --color-paper-card-hover: #f0e9d2;
+
+  /* Tinta — tonos de texto */
+  --color-ink: #1c1c1c;
+  --color-ink-soft: #5c5c5c;
+  --color-ink-muted: #9a948a;
+  --color-ink-fade: #c4beae;
+
+  /* Noche — sidebar + cards oscuros. Azules más profundos. */
+  --color-night: #131e3d;
+  --color-night-deep: #0a1124;
+  --color-night-darker: #060a18;
+
+  /* Tags */
+  --color-tag-mood-bg: #d8def0;
+  --color-tag-mood-text: #2d3b6b;
+  --color-tag-context-bg: #efe7d2;
+  --color-tag-context-text: #6b5e3d;
+
+  /* Acentos */
+  --color-heart: #e84c5d;
+  --color-spark: #7dd3fc; /* destello cyan junto al avatar */
+  --color-success: #2d6a3e;
+
+  /* Línea / bordes */
+  --color-line: #e0d8c5;
+  --color-line-soft: #ece4d2;
 }
 
+/**
+ * Theme inline: expone tokens a Tailwind v4 para usar como utilities
+ * (bg-paper, text-ink, font-hand, etc.).
+ */
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-paper: var(--color-paper);
+  --color-paper-card: var(--color-paper-card);
+  --color-paper-card-hover: var(--color-paper-card-hover);
+
+  --color-ink: var(--color-ink);
+  --color-ink-soft: var(--color-ink-soft);
+  --color-ink-muted: var(--color-ink-muted);
+  --color-ink-fade: var(--color-ink-fade);
+
+  --color-night: var(--color-night);
+  --color-night-deep: var(--color-night-deep);
+  --color-night-darker: var(--color-night-darker);
+
+  --color-tag-mood-bg: var(--color-tag-mood-bg);
+  --color-tag-mood-text: var(--color-tag-mood-text);
+  --color-tag-context-bg: var(--color-tag-context-bg);
+  --color-tag-context-text: var(--color-tag-context-text);
+
+  --color-heart: var(--color-heart);
+  --color-line: var(--color-line);
+  --color-line-soft: var(--color-line-soft);
+
+  --font-sans: var(--font-inter), system-ui, sans-serif;
+  --font-hand: var(--font-caveat), cursive;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
-}
-
+/**
+ * Sutil grain de papel para fondos cálidos. Aplica a body por default.
+ * Esto le da al fondo "vida" sin texturas pesadas.
+ */
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background-color: var(--color-paper);
+  color: var(--color-ink);
+  font-family: var(--font-inter), system-ui, sans-serif;
+
+  /* Grain SVG noise muy sutil */
+  background-image:
+    radial-gradient(circle at 25% 0%, rgba(245, 230, 200, 0.4) 0%, transparent 50%),
+    radial-gradient(circle at 100% 100%, rgba(220, 200, 170, 0.25) 0%, transparent 60%);
+}
+
+/**
+ * Selección de texto — color cálido en lugar del azul system.
+ */
+::selection {
+  background: rgba(232, 76, 93, 0.2);
+  color: var(--color-ink);
 }
