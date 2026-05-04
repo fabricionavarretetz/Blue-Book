@@ -24,6 +24,7 @@ conversación original.
 | 05 | [Día 5 — Proxy a Spotify](./05-dia-5-spotify-proxy.md) | 2026-05-02 | Cliente Spotify con Client Credentials + user token con refresh automático. TtlCache in-memory. Endpoints /api/search, /api/tracks/:id, /api/me/spotify/top-tracks. |
 | 06 | [Día 6 — Deploy en Vercel](./06-dia-6-deploy-vercel.md) | 2026-05-02 | Deploy ligero en Vercel (sin Spotify OAuth en prod). middleware.ts → proxy.ts. prisma generate en build. Provider OAuth condicional. URL pública: blue-book-eight.vercel.app. |
 | 07 | [Día 7 — Componentes UI + favicon + README (cierre Semana 1)](./07-dia-7-componentes-y-readme.md) | 2026-05-02 | Primitivas compartidas (Button/InputField/Card), refactor de páginas, favicon SVG, metadata global, README completo. Cierra Semana 1 del roadmap. |
+| 08-09 | [Día 8-9 — Base visual + crear y listar momentos](./08-dia-8-9-base-visual-y-crear-entries.md) | 2026-05-02/03 | Tipografías (Inter + Caveat), tokens cálidos, sidebar nocturno con imagen ambient del mockup, route group (app), página /diary/new con search Spotify y server action createEntryAction. Bug crítico fixed: allowedDevOrigins. Primer momento real guardado. |
 
 ## Plan general del proyecto
 
