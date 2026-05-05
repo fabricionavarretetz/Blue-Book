@@ -2,6 +2,8 @@ import { notFound } from "next/navigation";
 import Link from "next/link";
 import { prisma } from "@/lib/db";
 import { getProfileStats } from "@/lib/profile-stats";
+import { auth } from "@/auth";
+import { FollowButton } from "@/components/people/follow-button";
 import type { Metadata } from "next";
 
 /**
@@ -69,10 +71,28 @@ export default async function PublicProfilePage({
       bio: true,
       avatarUrl: true,
       createdAt: true,
+      _count: { select: { followers: true, following: true } },
     },
   });
 
   if (!user) notFound();
+
+  // ¿El visitante (si está logueado) ya sigue a este user?
+  const session = await auth();
+  const isOwnProfile = session?.user?.id === user.id;
+  let initiallyFollowing = false;
+  if (session?.user?.id && !isOwnProfile) {
+    const fol = await prisma.follow.findUnique({
+      where: {
+        followerId_followeeId: {
+          followerId: session.user.id,
+          followeeId: user.id,
+        },
+      },
+      select: { followerId: true },
+    });
+    initiallyFollowing = !!fol;
+  }
 
   const [entries, stats] = await Promise.all([
     prisma.entry.findMany({
@@ -94,17 +114,45 @@ export default async function PublicProfilePage({
           )}
         </div>
         <div className="min-w-0 flex-1">
-          <h1 className="text-3xl font-bold text-ink">{user.displayName}</h1>
-          <p className="text-sm text-ink-soft">@{user.username}</p>
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <h1 className="text-3xl font-bold text-ink">{user.displayName}</h1>
+              <p className="text-sm text-ink-soft">@{user.username}</p>
+            </div>
+            {/* Botón seguir solo si el visitante está logueado y NO es su propio perfil */}
+            {session?.user?.id && !isOwnProfile && (
+              <FollowButton
+                targetUsername={user.username}
+                initiallyFollowing={initiallyFollowing}
+              />
+            )}
+            {isOwnProfile && (
+              <Link
+                href="/profile"
+                className="rounded-full border border-line bg-paper-card px-4 py-1.5 text-sm font-medium text-ink hover:bg-paper-card-hover"
+              >
+                Editar perfil
+              </Link>
+            )}
+          </div>
           {user.bio && <p className="mt-2 text-sm leading-relaxed text-ink">{user.bio}</p>}
           <p className="mt-3 text-xs text-ink-muted">
-            {stats.totalEntries} momento{stats.totalEntries === 1 ? "" : "s"}
-            {stats.topArtist && (
-              <>
-                {" · "}
-                escucha mucho a <span className="text-ink">{stats.topArtist.name}</span>
-              </>
-            )}
+            <Link
+              href={`/u/${user.username}/followers`}
+              className="hover:text-ink"
+            >
+              <span className="text-ink">{user._count.followers}</span> seguidores
+            </Link>
+            {" · "}
+            <Link
+              href={`/u/${user.username}/following`}
+              className="hover:text-ink"
+            >
+              <span className="text-ink">{user._count.following}</span> siguiendo
+            </Link>
+            {" · "}
+            <span className="text-ink">{stats.totalEntries}</span> momento
+            {stats.totalEntries === 1 ? "" : "s"}
           </p>
         </div>
       </header>

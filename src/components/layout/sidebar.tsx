@@ -70,7 +70,7 @@ export function Sidebar({ activeKey = "diary", user }: SidebarProps) {
   }> = [
     { key: "diary", href: "/diary", label: "Mi diario", enabled: true },
     { key: "explore", href: "/explore", label: "Explorar", enabled: false },
-    { key: "people", href: "/people", label: "Personas", enabled: false },
+    { key: "people", href: "/people", label: "Personas", enabled: true },
     { key: "stories", href: "/stories", label: "Historias", enabled: false },
     { key: "timeline", href: "/timeline", label: "Timeline", enabled: false },
     { key: "saved", href: "/saved", label: "Guardado", enabled: false },
