@@ -4,6 +4,7 @@ import { useActionState, useEffect, useRef, useState } from "react";
 import Link from "next/link";
 import { createEntryAction, type CreateEntryState } from "@/lib/actions/entries";
 import { Button } from "@/components/ui/button";
+import { TagPicker } from "./tag-picker";
 
 /**
  * Form de creación de entry — UI funcional sin polish visual.
@@ -188,26 +189,20 @@ export function NewEntryForm() {
       {selected && reaction && (
         <>
           <section>
-            <label className="mb-2 block text-sm font-medium text-ink">
-              Mood tags <span className="text-xs text-ink-muted">(opcional, separa con comas)</span>
-            </label>
-            <input
-              type="text"
+            <TagPicker
               name="moodTags"
-              placeholder="nostálgico, eufórico, melancólico…"
-              className="w-full rounded-lg border border-line bg-paper-card px-3 py-2 text-sm focus:border-ink focus:outline-none"
+              type="MOOD"
+              label="¿Cómo te hizo sentir? (opcional)"
+              accentClass="bg-[var(--color-tag-mood-bg)] text-[var(--color-tag-mood-text)]"
             />
           </section>
 
           <section>
-            <label className="mb-2 block text-sm font-medium text-ink">
-              Contexto <span className="text-xs text-ink-muted">(opcional)</span>
-            </label>
-            <input
-              type="text"
+            <TagPicker
               name="contextTags"
-              placeholder="noche, manejando, gym…"
-              className="w-full rounded-lg border border-line bg-paper-card px-3 py-2 text-sm focus:border-ink focus:outline-none"
+              type="CONTEXT"
+              label="¿Dónde o qué hacías? (opcional)"
+              accentClass="bg-[var(--color-tag-context-bg)] text-[var(--color-tag-context-text)]"
             />
           </section>
 

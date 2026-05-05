@@ -1,14 +1,17 @@
+import { notFound } from "next/navigation";
 import Link from "next/link";
-import { requireAuth } from "@/lib/auth-guard";
 import { prisma } from "@/lib/db";
-import { EntryMenu } from "./entry-menu";
+import { getProfileStats } from "@/lib/profile-stats";
+import type { Metadata } from "next";
 
 /**
- * /diary — vista principal del usuario logueado.
+ * /u/[username] — vista PÚBLICA del diario de un usuario.
  *
- * Día 9 (funcional): lista real de entries desde DB con metadata del
- * trackSnapshot. Sin polish visual final — eso vuelve cuando se retome
- * la integración del design system.
+ * Accesible sin sesión. Muestra solo entries con visibility=PUBLIC.
+ * Si el usuario está logueado y mira su propio perfil, ve un CTA para editar.
+ *
+ * No protegida por auth (intencional). El proxy de Next.js no aplica aquí
+ * porque /u no está en PROTECTED_PATHS.
  */
 
 type TrackSnapshot = {
@@ -25,79 +28,94 @@ function isTrackSnapshot(v: unknown): v is TrackSnapshot {
 
 function formatRelative(date: Date): string {
   const now = new Date();
-  const diffMs = now.getTime() - date.getTime();
-  const days = Math.floor(diffMs / (1000 * 60 * 60 * 24));
-  if (days === 0) {
-    const hours = Math.floor(diffMs / (1000 * 60 * 60));
-    if (hours === 0) {
-      const mins = Math.max(1, Math.floor(diffMs / (1000 * 60)));
-      return `hace ${mins} min`;
-    }
-    return `hace ${hours}h`;
-  }
+  const days = Math.floor((now.getTime() - date.getTime()) / (1000 * 60 * 60 * 24));
+  if (days === 0) return "hoy";
   if (days === 1) return "ayer";
   if (days < 7) return `hace ${days} días`;
   if (days < 30) return `hace ${Math.floor(days / 7)} sem`;
   return date.toLocaleDateString("es", { day: "numeric", month: "short", year: "numeric" });
 }
 
-export default async function DiaryPage() {
-  const session = await requireAuth("/diary");
+export async function generateMetadata({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}): Promise<Metadata> {
+  const { username } = await params;
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: { displayName: true, bio: true },
+  });
+  if (!user) return { title: "Usuario no encontrado" };
+  return {
+    title: `${user.displayName} (@${username})`,
+    description: user.bio ?? `El diario musical de ${user.displayName}`,
+  };
+}
 
-  const entries = await prisma.entry.findMany({
-    where: { userId: session.user.id },
-    orderBy: { createdAt: "desc" },
-    take: 50,
+export default async function PublicProfilePage({
+  params,
+}: {
+  params: Promise<{ username: string }>;
+}) {
+  const { username } = await params;
+
+  const user = await prisma.user.findUnique({
+    where: { username },
+    select: {
+      id: true,
+      displayName: true,
+      username: true,
+      bio: true,
+      avatarUrl: true,
+      createdAt: true,
+    },
   });
 
+  if (!user) notFound();
+
+  const [entries, stats] = await Promise.all([
+    prisma.entry.findMany({
+      where: { userId: user.id, visibility: "PUBLIC" },
+      orderBy: { createdAt: "desc" },
+      take: 30,
+    }),
+    getProfileStats(user.id),
+  ]);
+
   return (
-    <main className="px-12 py-10">
-      <header className="mb-10 flex items-start gap-12">
-        <div className="flex flex-1 items-start gap-10">
-          <div>
-            <h1 className="text-5xl font-bold tracking-tight text-ink leading-[1.05]">
-              Mi diario
-            </h1>
-            <p className="mt-3 text-[15px] leading-relaxed text-ink-soft max-w-[260px]">
-              Cada canción guarda un momento.
-              <br />
-              Cada momento te cuenta algo.
-            </p>
-          </div>
-
-          <p className="font-hand max-w-[200px] pt-3 text-[20px] leading-snug text-ink-soft">
-            no es solo música,
-            <br />
-            es todo lo que vivías
-            <br />
-            cuando la escuchabas.{" "}
-            <span className="text-[var(--color-heart)]">♥</span>
-          </p>
+    <main className="mx-auto max-w-2xl px-6 py-12">
+      {/* Header del perfil */}
+      <header className="mb-10 flex items-start gap-5">
+        <div className="h-20 w-20 flex-shrink-0 overflow-hidden rounded-full bg-gradient-to-br from-amber-300 via-amber-700 to-stone-900 ring-4 ring-paper-card">
+          {user.avatarUrl && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img src={user.avatarUrl} alt="" className="h-full w-full object-cover" />
+          )}
         </div>
-
-        <div className="flex flex-shrink-0 items-center gap-3">
-          <Link
-            href="/diary/new"
-            className="flex items-center gap-2 rounded-full bg-ink px-5 py-2.5 text-sm font-medium text-white transition-opacity hover:opacity-90"
-          >
-            <span className="text-base leading-none">+</span> Nueva entrada
-          </Link>
+        <div className="min-w-0 flex-1">
+          <h1 className="text-3xl font-bold text-ink">{user.displayName}</h1>
+          <p className="text-sm text-ink-soft">@{user.username}</p>
+          {user.bio && <p className="mt-2 text-sm leading-relaxed text-ink">{user.bio}</p>}
+          <p className="mt-3 text-xs text-ink-muted">
+            {stats.totalEntries} momento{stats.totalEntries === 1 ? "" : "s"}
+            {stats.topArtist && (
+              <>
+                {" · "}
+                escucha mucho a <span className="text-ink">{stats.topArtist.name}</span>
+              </>
+            )}
+          </p>
         </div>
       </header>
 
+      <hr className="mb-8 border-line" />
+
+      {/* Entries públicas */}
       {entries.length === 0 ? (
-        <div className="rounded-2xl border border-dashed border-line bg-paper-card p-12 text-center">
-          <p className="font-hand text-3xl text-ink-soft">
-            @{session.user.username} · 0 momentos
-          </p>
-          <p className="mt-4 text-ink-muted">
-            Empieza tu diario:{" "}
-            <Link href="/diary/new" className="underline hover:text-ink">
-              guarda tu primer momento
-            </Link>
-            .
-          </p>
-        </div>
+        <p className="text-center text-sm text-ink-muted">
+          @{user.username} aún no tiene momentos públicos.
+        </p>
       ) : (
         <ul className="space-y-4">
           {entries.map((e) => {
@@ -108,7 +126,6 @@ export default async function DiaryPage() {
                 className="rounded-2xl border border-line bg-paper-card p-5 shadow-sm"
               >
                 <div className="flex gap-4">
-                  {/* Cover */}
                   <div className="flex-shrink-0">
                     {snap?.album.image ? (
                       /* eslint-disable-next-line @next/next/no-img-element */
@@ -122,7 +139,6 @@ export default async function DiaryPage() {
                     )}
                   </div>
 
-                  {/* Info */}
                   <div className="min-w-0 flex-1">
                     <div className="flex items-start justify-between gap-3">
                       <div className="min-w-0">
@@ -133,13 +149,9 @@ export default async function DiaryPage() {
                           {snap?.artists.map((a) => a.name).join(", ") ?? ""}
                         </p>
                       </div>
-                      <div className="flex flex-shrink-0 items-center gap-2">
-                        <span className="text-2xl leading-none">{e.reaction}</span>
-                        <EntryMenu entryId={e.id} />
-                      </div>
+                      <span className="text-2xl leading-none">{e.reaction}</span>
                     </div>
 
-                    {/* Tags */}
                     {(e.moodTags.length > 0 || e.contextTags.length > 0) && (
                       <div className="mt-2 flex flex-wrap gap-1.5">
                         {e.moodTags.map((t) => (
@@ -161,16 +173,13 @@ export default async function DiaryPage() {
                       </div>
                     )}
 
-                    {/* Reflexión */}
                     {e.reflection && (
                       <p className="mt-3 font-hand text-[20px] leading-snug text-ink">
                         {e.reflection}
                       </p>
                     )}
 
-                    <p className="mt-3 text-[11px] text-ink-muted">
-                      {formatRelative(e.createdAt)}
-                    </p>
+                    <p className="mt-3 text-[11px] text-ink-muted">{formatRelative(e.createdAt)}</p>
                   </div>
                 </div>
               </li>
@@ -178,6 +187,14 @@ export default async function DiaryPage() {
           })}
         </ul>
       )}
+
+      {/* Footer minimal */}
+      <footer className="mt-12 text-center">
+        <Link href="/" className="font-hand text-2xl text-ink-soft hover:text-ink">
+          Blue Book
+        </Link>
+        <p className="mt-1 text-xs text-ink-muted">tu diario de música</p>
+      </footer>
     </main>
   );
 }

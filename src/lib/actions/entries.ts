@@ -139,6 +139,65 @@ function parseStringArray(raw: FormDataEntryValue | null): string[] {
 }
 
 /**
+ * Actualiza una entry existente. Solo el dueño puede editar.
+ * NO permite cambiar la canción (spotifyId, trackSnapshot) — el momento
+ * está atado a la canción específica. Si quiere otra canción, crea una
+ * entry nueva.
+ *
+ * Editable: reaction, moodTags, contextTags, reflection.
+ */
+const updateSchema = z.object({
+  entryId: z.string().min(1),
+  reaction: z.string().min(1).max(8),
+  reflection: z.string().max(2000).optional().or(z.literal("")),
+  moodTags: z.array(z.string().min(1).max(40)).max(10).default([]),
+  contextTags: z.array(z.string().min(1).max(40)).max(10).default([]),
+});
+
+export async function updateEntryAction(
+  _prev: CreateEntryState | undefined,
+  formData: FormData,
+): Promise<CreateEntryState> {
+  const session = await auth();
+  if (!session?.user?.id) {
+    return { ok: false, error: "No autorizado" };
+  }
+
+  const moodRaw = formData.get("moodTags");
+  const ctxRaw = formData.get("contextTags");
+
+  const parsed = updateSchema.safeParse({
+    entryId: formData.get("entryId"),
+    reaction: formData.get("reaction"),
+    reflection: formData.get("reflection") || undefined,
+    moodTags: parseStringArray(moodRaw),
+    contextTags: parseStringArray(ctxRaw),
+  });
+
+  if (!parsed.success) {
+    return { ok: false, fieldErrors: parsed.error.flatten().fieldErrors };
+  }
+
+  // updateMany con filtro de ownership — protege contra editar entries ajenas.
+  const result = await prisma.entry.updateMany({
+    where: { id: parsed.data.entryId, userId: session.user.id },
+    data: {
+      reaction: parsed.data.reaction,
+      reflection: parsed.data.reflection || null,
+      moodTags: parsed.data.moodTags,
+      contextTags: parsed.data.contextTags,
+    },
+  });
+
+  if (result.count === 0) {
+    return { ok: false, error: "Entry no encontrada o sin permiso" };
+  }
+
+  revalidatePath("/diary");
+  redirect("/diary");
+}
+
+/**
  * Borra una entry del usuario. Devuelve a /diary tras éxito.
  */
 export async function deleteEntryAction(entryId: string): Promise<void> {
