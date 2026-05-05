@@ -92,3 +92,9 @@ body {
   background: rgba(232, 76, 93, 0.2);
   color: var(--color-ink);
 }
+
+/**
+ * Tocadiscos vintage (componente <VinylPlayer>) — el disco gira mientras
+ * el preview Spotify/Apple suena. Animación se pausa cuando el audio pausa
+ * con la clase `paused`.
+ */

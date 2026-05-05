@@ -6,6 +6,7 @@ import { revalidatePath } from "next/cache";
 import { auth } from "@/auth";
 import { prisma } from "@/lib/db";
 import { spotifyFetch, SpotifyApiError } from "@/lib/spotify";
+import { getApplePreviewUrl } from "@/lib/apple-music";
 
 /**
  * Server actions de entries (momentos del diario).
@@ -41,6 +42,7 @@ type SpotifyTrack = {
   artists: Array<{ id: string; name: string }>;
   album: { id: string; name: string; images: Array<{ url: string; width: number }> };
   duration_ms: number;
+  preview_url?: string | null;
   external_urls?: { spotify?: string };
   external_ids?: { isrc?: string };
 };
@@ -80,6 +82,13 @@ export async function createEntryAction(
   let snapshot;
   try {
     const track = await spotifyFetch<SpotifyTrack>(`/tracks/${parsed.data.spotifyId}`);
+    // previewUrl: primero Spotify (suele venir null en Development Mode);
+    // si null, fallback a iTunes Search API (catálogo Apple Music, sin auth).
+    let previewUrl: string | null = track.preview_url ?? null;
+    if (!previewUrl && track.artists[0]?.name) {
+      previewUrl = await getApplePreviewUrl(track.name, track.artists[0].name);
+    }
+
     snapshot = {
       name: track.name,
       artists: track.artists.map((a) => ({ id: a.id, name: a.name })),
@@ -91,6 +100,7 @@ export async function createEntryAction(
       durationMs: track.duration_ms,
       isrc: track.external_ids?.isrc ?? null,
       externalUrl: track.external_urls?.spotify ?? null,
+      previewUrl,
     };
   } catch (err) {
     if (err instanceof SpotifyApiError && err.status === 404) {

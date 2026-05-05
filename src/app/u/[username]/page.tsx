@@ -123,65 +123,70 @@ export default async function PublicProfilePage({
             return (
               <li
                 key={e.id}
-                className="rounded-2xl border border-line bg-paper-card p-5 shadow-sm"
+                className="group"
               >
-                <div className="flex gap-4">
-                  <div className="flex-shrink-0">
-                    {snap?.album.image ? (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={snap.album.image}
-                        alt=""
-                        className="h-20 w-20 rounded-lg object-cover"
-                      />
-                    ) : (
-                      <div className="h-20 w-20 rounded-lg bg-ink-fade" />
-                    )}
-                  </div>
-
-                  <div className="min-w-0 flex-1">
-                    <div className="flex items-start justify-between gap-3">
-                      <div className="min-w-0">
-                        <p className="truncate text-base font-semibold text-ink">
-                          {snap?.name ?? "Canción"}
-                        </p>
-                        <p className="truncate text-sm text-ink-soft">
-                          {snap?.artists.map((a) => a.name).join(", ") ?? ""}
-                        </p>
-                      </div>
-                      <span className="text-2xl leading-none">{e.reaction}</span>
+                <Link
+                  href={`/u/${user.username}/${e.id}`}
+                  className="block rounded-2xl border border-line bg-paper-card p-5 shadow-sm transition-shadow hover:shadow-md"
+                >
+                  <div className="flex gap-4">
+                    <div className="flex-shrink-0">
+                      {snap?.album.image ? (
+                        /* eslint-disable-next-line @next/next/no-img-element */
+                        <img
+                          src={snap.album.image}
+                          alt=""
+                          className="h-20 w-20 rounded-lg object-cover"
+                        />
+                      ) : (
+                        <div className="h-20 w-20 rounded-lg bg-ink-fade" />
+                      )}
                     </div>
 
-                    {(e.moodTags.length > 0 || e.contextTags.length > 0) && (
-                      <div className="mt-2 flex flex-wrap gap-1.5">
-                        {e.moodTags.map((t) => (
-                          <span
-                            key={`m-${t}`}
-                            className="rounded-full bg-[var(--color-tag-mood-bg)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-tag-mood-text)]"
-                          >
-                            {t}
-                          </span>
-                        ))}
-                        {e.contextTags.map((t) => (
-                          <span
-                            key={`c-${t}`}
-                            className="rounded-full bg-[var(--color-tag-context-bg)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-tag-context-text)]"
-                          >
-                            {t}
-                          </span>
-                        ))}
+                    <div className="min-w-0 flex-1">
+                      <div className="flex items-start justify-between gap-3">
+                        <div className="min-w-0">
+                          <p className="truncate text-base font-semibold text-ink group-hover:underline">
+                            {snap?.name ?? "Canción"}
+                          </p>
+                          <p className="truncate text-sm text-ink-soft">
+                            {snap?.artists.map((a) => a.name).join(", ") ?? ""}
+                          </p>
+                        </div>
+                        <span className="text-2xl leading-none">{e.reaction}</span>
                       </div>
-                    )}
 
-                    {e.reflection && (
-                      <p className="mt-3 font-hand text-[20px] leading-snug text-ink">
-                        {e.reflection}
-                      </p>
-                    )}
+                      {(e.moodTags.length > 0 || e.contextTags.length > 0) && (
+                        <div className="mt-2 flex flex-wrap gap-1.5">
+                          {e.moodTags.map((t) => (
+                            <span
+                              key={`m-${t}`}
+                              className="rounded-full bg-[var(--color-tag-mood-bg)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-tag-mood-text)]"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                          {e.contextTags.map((t) => (
+                            <span
+                              key={`c-${t}`}
+                              className="rounded-full bg-[var(--color-tag-context-bg)] px-2.5 py-0.5 text-[11px] font-medium text-[var(--color-tag-context-text)]"
+                            >
+                              {t}
+                            </span>
+                          ))}
+                        </div>
+                      )}
 
-                    <p className="mt-3 text-[11px] text-ink-muted">{formatRelative(e.createdAt)}</p>
+                      {e.reflection && (
+                        <p className="mt-3 font-hand text-[20px] leading-snug text-ink">
+                          {e.reflection}
+                        </p>
+                      )}
+
+                      <p className="mt-3 text-[11px] text-ink-muted">{formatRelative(e.createdAt)}</p>
+                    </div>
                   </div>
-                </div>
+                </Link>
               </li>
             );
           })}
