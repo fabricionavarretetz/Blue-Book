@@ -1,7 +1,9 @@
 import { notFound } from "next/navigation";
 import type { Metadata } from "next";
 import { prisma } from "@/lib/db";
+import { auth } from "@/auth";
 import { EntryDetail } from "@/components/diary/entry-detail";
+import { getEntryReactions } from "@/lib/reactions";
 
 type TrackSnapshot = {
   name: string;
@@ -86,6 +88,11 @@ export default async function PublicEntryPage({
     notFound();
   }
 
+  const session = await auth();
+  const reactions = await getEntryReactions(entry.id, session?.user?.id ?? null);
+  const isAuthor = session?.user?.id === entry.userId;
+  const canReact = !!session?.user?.id && !isAuthor;
+
   return (
     <EntryDetail
       entry={{
@@ -101,6 +108,8 @@ export default async function PublicEntryPage({
       mode={{
         type: "public",
         author: { username: entry.user.username, displayName: entry.user.displayName },
+        reactions,
+        canReact,
       }}
     />
   );

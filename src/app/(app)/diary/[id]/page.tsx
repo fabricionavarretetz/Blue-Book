@@ -3,6 +3,7 @@ import { requireAuth } from "@/lib/auth-guard";
 import { prisma } from "@/lib/db";
 import { EntryDetail } from "@/components/diary/entry-detail";
 import { EntryMenu } from "../entry-menu";
+import { getEntryReactions } from "@/lib/reactions";
 
 type TrackSnapshot = {
   name: string;
@@ -38,6 +39,10 @@ export default async function DiaryEntryPage({
     notFound();
   }
 
+  // Reactions agregadas — el viewer es el autor (no se resaltan "mis" reactions
+  // porque uno no puede reaccionar a su propia entry).
+  const reactions = await getEntryReactions(entry.id);
+
   return (
     <EntryDetail
       entry={{
@@ -50,7 +55,11 @@ export default async function DiaryEntryPage({
         createdAt: entry.createdAt,
         trackSnapshot: entry.trackSnapshot,
       }}
-      mode={{ type: "private", menu: <EntryMenu entryId={entry.id} /> }}
+      mode={{
+        type: "private",
+        menu: <EntryMenu entryId={entry.id} />,
+        reactions,
+      }}
     />
   );
 }

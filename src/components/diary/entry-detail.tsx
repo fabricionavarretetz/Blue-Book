@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { TrackPreview } from "./track-preview";
+import { ReactionBar } from "./reaction-bar";
+import type { AggregatedReactions } from "@/lib/reactions";
 
 /**
  * Vista de detalle de un momento. Renderiza la entry con cover grande,
@@ -34,8 +36,14 @@ type Author = {
 };
 
 type Mode =
-  | { type: "private"; menu: React.ReactNode }
-  | { type: "public"; author: Author };
+  | { type: "private"; menu: React.ReactNode; reactions?: AggregatedReactions }
+  | {
+      type: "public";
+      author: Author;
+      reactions: AggregatedReactions;
+      /** True si el viewer puede reaccionar (logueado y NO autor). */
+      canReact: boolean;
+    };
 
 function formatFull(date: Date): string {
   return date.toLocaleDateString("es", {
@@ -139,6 +147,26 @@ export function EntryDetail({ entry, mode }: { entry: Entry; mode: Mode }) {
           <p className="font-hand text-2xl leading-relaxed text-ink whitespace-pre-wrap">
             {entry.reflection}
           </p>
+        </div>
+      )}
+
+      {/* Reactions — vista pública y privada (en privada solo lectura) */}
+      {mode.type === "public" && (
+        <div className="mb-6">
+          <ReactionBar
+            entryId={entry.id}
+            initial={mode.reactions}
+            interactive={mode.canReact}
+          />
+        </div>
+      )}
+      {mode.type === "private" && mode.reactions && mode.reactions.total > 0 && (
+        <div className="mb-6">
+          <ReactionBar
+            entryId={entry.id}
+            initial={mode.reactions}
+            interactive={false}
+          />
         </div>
       )}
 
