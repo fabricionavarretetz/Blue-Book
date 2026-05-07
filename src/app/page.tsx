@@ -1,95 +1,38 @@
 import Link from "next/link";
-import { auth, signOut, SPOTIFY_OAUTH_ENABLED } from "@/auth";
-import { prisma } from "@/lib/db";
-import { connectSpotifyAction } from "@/lib/actions/spotify";
-import { Button } from "@/components/ui/button";
-import { Card } from "@/components/ui/card";
+import { redirect } from "next/navigation";
+import { auth } from "@/auth";
 
+/**
+ * Home (`/`):
+ *   - Sin sesión → landing pública con CTA a login/register.
+ *   - Con sesión → redirige a /feed (donde vive el hybrid feed con sidebar).
+ */
 export default async function Home() {
   const session = await auth();
-
-  // Si hay sesión + Spotify OAuth habilitado en el entorno, miramos si ya
-  // tiene Spotify vinculado. Si el OAuth está deshabilitado (env vars
-  // ausentes en prod), saltamos la query y no mostramos el botón.
-  let hasSpotify = false;
-  if (session?.user?.id && SPOTIFY_OAUTH_ENABLED) {
-    const acct = await prisma.account.findFirst({
-      where: { userId: session.user.id, provider: "spotify" },
-      select: { id: true },
-    });
-    hasSpotify = !!acct;
+  if (session?.user?.id) {
+    redirect("/feed");
   }
 
   return (
-    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-stone-50 px-4 py-12">
+    <main className="flex min-h-screen flex-col items-center justify-center gap-8 bg-paper px-4 py-12">
       <header className="text-center">
-        <h1 className="text-5xl font-semibold tracking-tight text-stone-900">Blue Book</h1>
-        <p className="mt-2 text-stone-600">Tu diario de música</p>
+        <h1 className="text-5xl font-semibold tracking-tight text-ink">Blue Book</h1>
+        <p className="mt-2 text-ink-soft">Tu diario de música</p>
       </header>
-
-      {session?.user ? (
-        <Card className="flex w-full max-w-sm flex-col gap-4">
-          <div className="text-center">
-            <p className="text-stone-700">
-              Hola,{" "}
-              <span className="font-medium text-stone-900">
-                {session.user.displayName ?? session.user.username ?? session.user.email}
-              </span>
-            </p>
-            <p className="mt-1 text-xs text-stone-500">
-              @{session.user.username} · {session.user.email}
-            </p>
-          </div>
-
-          <div className="flex flex-col gap-2">
-            <Link
-              href="/diary"
-              className="rounded bg-stone-900 px-4 py-2 text-center text-sm text-white transition-colors hover:bg-stone-800"
-            >
-              Ir a mi diario
-            </Link>
-
-            {SPOTIFY_OAUTH_ENABLED &&
-              (hasSpotify ? (
-                <p className="rounded border border-emerald-200 bg-emerald-50 px-3 py-2 text-center text-xs text-emerald-700">
-                  Spotify conectado
-                </p>
-              ) : (
-                <form action={connectSpotifyAction}>
-                  <Button type="submit" variant="secondary" block>
-                    Conectar Spotify
-                  </Button>
-                </form>
-              ))}
-
-            <form
-              action={async () => {
-                "use server";
-                await signOut({ redirectTo: "/" });
-              }}
-            >
-              <Button type="submit" variant="ghost" block>
-                Cerrar sesión
-              </Button>
-            </form>
-          </div>
-        </Card>
-      ) : (
-        <div className="flex flex-col gap-3">
-          <Link
-            href="/login"
-            className="rounded bg-stone-900 px-6 py-2 text-center text-sm text-white transition-colors hover:bg-stone-800"
-          >
-            Iniciar sesión
-          </Link>
-          <Link
-            href="/register"
-            className="rounded border border-stone-300 bg-white px-6 py-2 text-center text-sm text-stone-900 transition-colors hover:bg-stone-100"
-          >
-            Crear cuenta
-          </Link>
-        </div>
-      )}
+      <div className="flex flex-col gap-3">
+        <Link
+          href="/login"
+          className="rounded bg-ink px-6 py-2 text-center text-sm text-white transition-colors hover:opacity-90"
+        >
+          Iniciar sesión
+        </Link>
+        <Link
+          href="/register"
+          className="rounded border border-line bg-paper-card px-6 py-2 text-center text-sm text-ink transition-colors hover:bg-paper-card-hover"
+        >
+          Crear cuenta
+        </Link>
+      </div>
     </main>
   );
 }

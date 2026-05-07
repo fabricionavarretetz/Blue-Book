@@ -1,4 +1,5 @@
 import Link from "next/link";
+import { signOut } from "@/auth";
 
 /**
  * Sidebar vertical persistente en desktop. Mobile lo colapsa (Día 12).
@@ -169,12 +170,25 @@ export function Sidebar({ activeKey = "diary", user }: SidebarProps) {
                 {user.displayName || user.username || "Tu cuenta"}
                 <span className="ml-1 text-[var(--color-spark)]">✦</span>
               </p>
-              <Link
-                href="/profile"
-                className="text-[10px] text-white/65 hover:text-white"
-              >
-                ver perfil
-              </Link>
+              <div className="flex items-center gap-2 text-[10px] text-white/65">
+                <Link href="/profile" className="hover:text-white">
+                  perfil
+                </Link>
+                <span className="text-white/30">·</span>
+                <form
+                  action={async () => {
+                    "use server";
+                    await signOut({ redirectTo: "/" });
+                  }}
+                >
+                  <button
+                    type="submit"
+                    className="text-white/65 hover:text-white"
+                  >
+                    salir
+                  </button>
+                </form>
+              </div>
             </div>
           </div>
         )}
