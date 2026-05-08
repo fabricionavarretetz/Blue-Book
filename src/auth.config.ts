@@ -10,7 +10,7 @@ import type { NextAuthConfig } from "next-auth";
  */
 
 /** Rutas que requieren sesión activa. Match por prefijo. */
-const PROTECTED_PATHS = ["/diary", "/profile", "/settings", "/people"];
+const PROTECTED_PATHS = ["/diary", "/profile", "/settings", "/people", "/explore"];
 
 /** Rutas de auth (login/register) — si hay sesión, redirigir a home. */
 const AUTH_PATHS = ["/login", "/register"];

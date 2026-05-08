@@ -25,7 +25,7 @@ type Track = {
 
 const DEFAULT_EMOJIS = ["🔥", "💔", "😭", "✨", "🌙", "🌅"];
 
-export function NewEntryForm() {
+export function NewEntryForm({ initialTrack }: { initialTrack?: Track | null } = {}) {
   const [state, formAction, pending] = useActionState<CreateEntryState | undefined, FormData>(
     createEntryAction,
     undefined,
@@ -34,7 +34,7 @@ export function NewEntryForm() {
   const [query, setQuery] = useState("");
   const [results, setResults] = useState<Track[]>([]);
   const [searching, setSearching] = useState(false);
-  const [selected, setSelected] = useState<Track | null>(null);
+  const [selected, setSelected] = useState<Track | null>(initialTrack ?? null);
   const [reaction, setReaction] = useState<string>("");
 
   const debounceRef = useRef<ReturnType<typeof setTimeout> | null>(null);

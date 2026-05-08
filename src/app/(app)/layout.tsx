@@ -19,7 +19,6 @@ export default async function AppLayout({ children }: { children: React.ReactNod
   return (
     <div className="flex min-h-screen">
       <Sidebar
-        activeKey="diary"
         user={{
           displayName: session.user.displayName ?? null,
           username: session.user.username ?? null,
