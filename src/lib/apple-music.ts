@@ -62,28 +62,30 @@ export async function getApplePreviewUrl(
     const wantedTrack = trackName.toLowerCase().trim();
     const wantedArtist = artistName.toLowerCase().trim();
 
-    // Buscar mejor match por similitud de nombre + artista
+    // Match estricto: artist debe coincidir Y track debe coincidir (alguno
+    // de: igual, startsWith en cualquier dirección — tolera "Track -
+    // Remastered" o "Track (feat. X)").
     for (const item of data.results) {
-      const itemTrack = (item.trackName ?? "").toLowerCase();
-      const itemArtist = (item.artistName ?? "").toLowerCase();
-      // Match aceptable si artistas coinciden y track empieza con el wanted
-      // (tolera versiones tipo "Track - Remastered" del catálogo Apple)
-      if (
-        item.previewUrl &&
-        itemArtist.includes(wantedArtist) &&
-        (itemTrack.startsWith(wantedTrack) || wantedTrack.startsWith(itemTrack))
-      ) {
+      if (!item.previewUrl) continue;
+      const itemTrack = (item.trackName ?? "").toLowerCase().trim();
+      const itemArtist = (item.artistName ?? "").toLowerCase().trim();
+      if (!itemArtist.includes(wantedArtist)) continue;
+      const sameTrack =
+        itemTrack === wantedTrack ||
+        itemTrack.startsWith(wantedTrack) ||
+        wantedTrack.startsWith(itemTrack);
+      if (sameTrack) {
         cache.set(key, item.previewUrl);
         return item.previewUrl;
       }
     }
 
-    // Fallback: primer resultado con previewUrl, sin validación estricta
-    // (mejor un preview de la versión "remastered" que ningún preview)
-    const firstWithPreview = data.results.find((i) => !!i.previewUrl);
-    const fallback = firstWithPreview?.previewUrl ?? null;
-    cache.set(key, fallback);
-    return fallback;
+    // NO devolvemos el primer resultado con preview como fallback — antes
+    // hacíamos eso y reproducía canciones distintas (ej. para "Slow Tonight"
+    // de Tom Misch iTunes devolvía otra canción con palabra "Slow").
+    // Mejor mostrar "sin preview disponible" que reproducir música ajena.
+    cache.set(key, null);
+    return null;
   } catch {
     cache.set(key, null);
     return null;

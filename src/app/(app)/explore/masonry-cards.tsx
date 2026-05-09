@@ -1,4 +1,7 @@
+"use client";
+
 import Link from "next/link";
+import { usePlayer } from "@/components/player/player-context";
 import type {
   ForYouItem,
   ForYouTrack,
@@ -9,14 +12,22 @@ import type {
 /**
  * Cards de la grilla masonry (Pinterest-style) de /explore.
  *
- * El contenedor pone `columns-2 md:columns-3` y cada card va con
- * `break-inside-avoid` + `mb-3`. CSS columns: el gap vertical se controla
- * con margin (no `gap`).
+ * Estructura clave: cada card va envuelta con `MASONRY_ITEM_STYLE` (inline
+ * style con `display: inline-block; width: 100%; breakInside: avoid`). El
+ * `inline-block + width: 100%` es el truco que IMPIDE que CSS multicolumn
+ * fragmente el card entre columnas — sin esto, los `position: absolute`
+ * children (botón play, pill "artista") quedan en posiciones desincronizadas
+ * y el click lleva a la card incorrecta.
  *
- * Cada card decide su altura natural — aspect ratio variable por fuente
- * para tracks, círculo para artists, cuadrado para albums, texto variable
- * para entries y users. Esa heterogeneidad genera el efecto masonry.
+ * `break-inside-avoid` como utility de Tailwind v4 no se generó consistente
+ * en este proyecto, por eso va inline también.
  */
+const MASONRY_ITEM_STYLE: React.CSSProperties = {
+  display: "inline-block",
+  width: "100%",
+  breakInside: "avoid",
+  verticalAlign: "top",
+};
 
 // ----------------------------------------------------------------------------
 //  ForYouCard — dispatcher: track / artist / album.
@@ -51,31 +62,79 @@ const LABEL_BY_SOURCE: Record<ForYouTrack["source"], string> = {
 
 function TrackForYouCard({ track }: { track: ForYouTrack }) {
   const cover = track.album.images[0]?.url ?? null;
+  const player = usePlayer();
+  const isThisTrack = player.track?.id === track.id;
+  const isPlayingThis = isThisTrack && player.isPlaying;
+
+  const handlePlay = () => {
+    if (isPlayingThis) {
+      player.pause();
+    } else if (isThisTrack) {
+      player.resume();
+    } else {
+      player.play({
+        id: track.id,
+        name: track.name,
+        artists: track.artists.map((a) => ({ name: a.name })),
+        albumImage: cover,
+        previewUrl: null,
+      });
+    }
+  };
+
   return (
-    <Link
-      href={`/diary/new?track=${track.id}`}
-      className="group mb-3 block break-inside-avoid overflow-hidden rounded-2xl shadow-sm transition-shadow hover:shadow-lg"
-    >
-      <div className={`relative ${ASPECT_BY_SOURCE[track.source]} bg-ink-fade`}>
-        {cover && (
-          /* eslint-disable-next-line @next/next/no-img-element */
-          <img
-            src={cover}
-            alt=""
-            className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
-          />
-        )}
-        <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90 backdrop-blur-sm">
-          {LABEL_BY_SOURCE[track.source]}
-        </span>
-        <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3">
-          <p className="truncate text-sm font-bold text-white">{track.name}</p>
-          <p className="truncate text-[11px] text-white/80">
-            {track.artists.map((a) => a.name).join(", ")}
-          </p>
+    <div className="group relative mb-3" style={MASONRY_ITEM_STYLE}>
+      <Link
+        href={`/diary/new?track=${track.id}`}
+        className="block overflow-hidden rounded-2xl shadow-sm transition-shadow hover:shadow-lg"
+      >
+        <div className={`relative ${ASPECT_BY_SOURCE[track.source]} bg-ink-fade`}>
+          {cover && (
+            /* eslint-disable-next-line @next/next/no-img-element */
+            <img
+              src={cover}
+              alt=""
+              className="h-full w-full object-cover transition duration-500 group-hover:scale-105"
+            />
+          )}
+          <span className="absolute left-2 top-2 rounded-full bg-black/55 px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-white/90 backdrop-blur-sm">
+            {LABEL_BY_SOURCE[track.source]}
+          </span>
+          <div className="absolute inset-x-0 bottom-0 bg-gradient-to-t from-black/85 via-black/40 to-transparent p-3">
+            <p className="truncate text-sm font-bold text-white">{track.name}</p>
+            <p className="truncate text-[11px] text-white/80">
+              {track.artists.map((a) => a.name).join(", ")}
+            </p>
+          </div>
         </div>
-      </div>
-    </Link>
+      </Link>
+      {/* Botón play FUERA del Link (button-in-anchor es HTML inválido). El
+          padre `group relative` permite hover-state + posicionamiento. */}
+      <button
+        type="button"
+        onClick={handlePlay}
+        aria-label={isPlayingThis ? "Pausar" : "Reproducir"}
+        style={{ color: "white" }}
+        className={`absolute right-2 top-2 z-10 flex h-9 w-9 items-center justify-center rounded-full bg-ink shadow-lg transition ${
+          isThisTrack ? "opacity-100" : "opacity-0 group-hover:opacity-100"
+        }`}
+      >
+        {isPlayingThis ? (
+          <svg viewBox="0 0 24 24" className="h-4 w-4" fill="currentColor">
+            <rect x="6" y="5" width="4" height="14" rx="1" />
+            <rect x="14" y="5" width="4" height="14" rx="1" />
+          </svg>
+        ) : (
+          <svg
+            viewBox="0 0 24 24"
+            className="h-4 w-4 translate-x-px"
+            fill="currentColor"
+          >
+            <path d="M8 5v14l11-7z" />
+          </svg>
+        )}
+      </button>
+    </div>
   );
 }
 
@@ -88,7 +147,8 @@ function ArtistForYouCard({ artist }: { artist: ForYouArtist }) {
   return (
     <Link
       href={`/explore/artist/${artist.id}`}
-      className="group mb-3 block break-inside-avoid bg-transparent p-3 text-center"
+      style={MASONRY_ITEM_STYLE}
+      className="group mb-3 bg-transparent p-3 text-center"
     >
       <span className="mb-3 inline-block rounded-full border border-line px-2 py-0.5 text-[10px] font-medium uppercase tracking-wide text-ink-muted">
         artista
@@ -130,7 +190,8 @@ function AlbumForYouCard({ album }: { album: ForYouAlbum }) {
   return (
     <Link
       href={`/explore/album/${album.id}`}
-      className="group mb-3 block break-inside-avoid overflow-hidden rounded-2xl border border-line bg-paper-card shadow-sm transition-shadow hover:shadow-md"
+      style={MASONRY_ITEM_STYLE}
+      className="group mb-3 overflow-hidden rounded-2xl border border-line bg-paper-card shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="relative aspect-square bg-ink-fade">
         {cover && (
@@ -195,7 +256,10 @@ export function TrendingMasonryCard({ entry }: { entry: TrendingEntryShape }) {
   if (!snap) return null;
 
   return (
-    <article className="mb-3 break-inside-avoid overflow-hidden rounded-2xl border border-line bg-paper-card shadow-sm transition-shadow hover:shadow-md">
+    <article
+      style={MASONRY_ITEM_STYLE}
+      className="mb-3 overflow-hidden rounded-2xl border border-line bg-paper-card shadow-sm transition-shadow hover:shadow-md"
+    >
       <Link
         href={`/u/${entry.user.username}/${entry.id}`}
         className="block"
@@ -254,7 +318,8 @@ export function UserMasonryCard({ user }: { user: UserCardShape }) {
   return (
     <Link
       href={`/u/${user.username}`}
-      className="mb-3 block break-inside-avoid rounded-2xl border border-line bg-paper-card p-5 text-center shadow-sm transition-shadow hover:shadow-md"
+      style={MASONRY_ITEM_STYLE}
+      className="mb-3 rounded-2xl border border-line bg-paper-card p-5 text-center shadow-sm transition-shadow hover:shadow-md"
     >
       <div className="mx-auto h-16 w-16 overflow-hidden rounded-full bg-gradient-to-br from-amber-300 via-amber-700 to-stone-900 ring-2 ring-paper-card">
         {user.avatarUrl && (

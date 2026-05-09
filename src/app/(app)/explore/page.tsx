@@ -29,7 +29,9 @@ import {
  * mobile. Más estable que columns-2 md:columns-3 con Tailwind v4.
  */
 const MASONRY_STYLE: React.CSSProperties = {
-  columns: "16rem",
+  // 14rem (~224px) hace que en max-w-5xl quepan 4 columnas en lugar de 3.
+  // Cards más densas y la sensación masonry asimétrica se sostiene mejor.
+  columns: "14rem",
   columnGap: "0.75rem",
 };
 export default async function ExplorePage() {

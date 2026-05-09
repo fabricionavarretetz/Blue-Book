@@ -112,12 +112,21 @@ export function EntryDetail({ entry, mode }: { entry: Entry; mode: Mode }) {
         )}
       </header>
 
-      {/* Preview 30s — solo si hay previewUrl (Spotify o Apple fallback) */}
-      {snap.previewUrl && (
-        <div className="mb-6">
-          <TrackPreview url={snap.previewUrl} albumImage={snap.album.image} />
-        </div>
-      )}
+      {/* Trigger del mini player global. Mostramos el botón aunque la
+          previewUrl venga null en el snapshot — el PlayerContext intentará
+          el fallback iTunes en runtime al pulsar play. */}
+      <div className="mb-6">
+        <TrackPreview
+          track={{
+            id: entry.spotifyId,
+            name: snap.name,
+            artists: snap.artists.map((a) => ({ name: a.name })),
+            albumImage: snap.album.image,
+            previewUrl: snap.previewUrl ?? null,
+            externalUrl: snap.externalUrl ?? null,
+          }}
+        />
+      </div>
 
       {/* Tags */}
       {(entry.moodTags.length > 0 || entry.contextTags.length > 0) && (

@@ -6,6 +6,7 @@ import {
   spotifyCache,
   SpotifyApiError,
 } from "@/lib/spotify";
+import { TrackPlayRow } from "@/components/player/track-play-row";
 
 /**
  * /explore/album/[id] — tracklist de un álbum en Spotify.
@@ -118,28 +119,16 @@ export default async function AlbumPage({
         <ol className="divide-y divide-line-soft">
           {album.tracks.items.map((t) => (
             <li key={t.id}>
-              <Link
-                href={`/diary/new?track=${t.id}`}
-                className="group flex items-center gap-4 rounded-lg p-3 transition hover:bg-paper-card"
-              >
-                <span className="w-6 flex-shrink-0 text-center text-sm text-ink-muted">
-                  {t.track_number}
-                </span>
-                <div className="min-w-0 flex-1">
-                  <p className="truncate text-sm font-medium text-ink">
-                    {t.name}
-                  </p>
-                  <p className="truncate text-xs text-ink-soft">
-                    {t.artists.map((a) => a.name).join(", ")}
-                  </p>
-                </div>
-                <span className="flex-shrink-0 text-xs text-ink-muted">
-                  {formatDuration(t.duration_ms)}
-                </span>
-                <span className="hidden flex-shrink-0 text-xs text-ink-soft group-hover:inline">
-                  guardar →
-                </span>
-              </Link>
+              <TrackPlayRow
+                number={t.track_number}
+                track={{
+                  id: t.id,
+                  name: t.name,
+                  artists: t.artists.map((a) => ({ name: a.name })),
+                  durationMs: t.duration_ms,
+                }}
+                subtitle={t.artists.map((a) => a.name).join(", ")}
+              />
             </li>
           ))}
         </ol>
@@ -152,13 +141,6 @@ export default async function AlbumPage({
       )}
     </main>
   );
-}
-
-function formatDuration(ms: number): string {
-  const total = Math.round(ms / 1000);
-  const min = Math.floor(total / 60);
-  const sec = total % 60;
-  return `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
 function formatTotalDuration(ms: number): string {

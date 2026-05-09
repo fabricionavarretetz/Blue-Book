@@ -6,6 +6,7 @@ import {
   spotifyCache,
   SpotifyApiError,
 } from "@/lib/spotify";
+import { TrackPlayRow } from "@/components/player/track-play-row";
 
 /**
  * /explore/artist/[id] — página de detalle de un artista en Spotify.
@@ -203,41 +204,17 @@ export default async function ArtistPage({
           <ol className="space-y-1.5">
             {recentTracks.map((t, idx) => (
               <li key={t.id}>
-                <Link
-                  href={`/diary/new?track=${t.id}`}
-                  className="group flex items-center gap-3 rounded-lg p-2 transition hover:bg-paper-card"
-                >
-                  <span className="w-5 flex-shrink-0 text-center text-sm font-medium text-ink-muted">
-                    {idx + 1}
-                  </span>
-                  <div
-                    style={{ width: 48, height: 48 }}
-                    className="flex-shrink-0 overflow-hidden rounded-md bg-ink-fade"
-                  >
-                    {recentAlbum.images[0]?.url && (
-                      /* eslint-disable-next-line @next/next/no-img-element */
-                      <img
-                        src={recentAlbum.images[0].url}
-                        alt=""
-                        className="h-full w-full object-cover"
-                      />
-                    )}
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <p className="truncate text-sm font-medium text-ink">
-                      {t.name}
-                    </p>
-                    <p className="truncate text-xs text-ink-soft">
-                      {t.artists.map((a) => a.name).join(", ")}
-                    </p>
-                  </div>
-                  <span className="flex-shrink-0 text-xs text-ink-muted">
-                    {formatDuration(t.duration_ms)}
-                  </span>
-                  <span className="flex-shrink-0 text-xs text-ink-soft opacity-0 transition group-hover:opacity-100">
-                    guardar →
-                  </span>
-                </Link>
+                <TrackPlayRow
+                  number={idx + 1}
+                  track={{
+                    id: t.id,
+                    name: t.name,
+                    artists: t.artists.map((a) => ({ name: a.name })),
+                    durationMs: t.duration_ms,
+                  }}
+                  albumImage={recentAlbum.images[0]?.url ?? null}
+                  subtitle={t.artists.map((a) => a.name).join(", ")}
+                />
               </li>
             ))}
           </ol>
@@ -306,13 +283,6 @@ function dedupeAlbums(items: SpotifyAlbum[]): SpotifyAlbum[] {
     out.push(alb);
   }
   return out;
-}
-
-function formatDuration(ms: number): string {
-  const total = Math.round(ms / 1000);
-  const min = Math.floor(total / 60);
-  const sec = total % 60;
-  return `${min}:${sec.toString().padStart(2, "0")}`;
 }
 
 function yearOf(releaseDate: string): string {
